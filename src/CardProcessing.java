@@ -15,43 +15,6 @@ public class CardProcessing
 	private ResponseAPDU answer;
 	
 	/**
-	*	Аутентификация загруженного ключа для конкретного сектора.
-	*	C-DATA, case 3:
-	*	CLA		0xFF;
-	*	INS		0x86;		- кодировка команды
-	*	P1		0x00;
-	*	P2		0x00;
-	*	P3		0x05;		- количество подаваемых байт
-	*	CDATA:	n			- номер блока, по отношению к которому осуществляется аутентификация.
-	*	CDATA:	0x60/0x61	- ключи А/В.
-	*	CDATA:	0x20		- ключ из временной памяти.
-	*
-	*	@param	blockNumber	Блок данных, по отношению к которому надо аутентифицировать ключ.
-	*	@param	keyType			Тип ключа (А/В)
-	*/
-	public void AuthenticateKey(int blockNumber, String keyType, ProximityCoupligDevice reader) throws CardException
-	{
-		byte[] authenticateAPDU = Utilities.ToByteArray("FF860000050100006020");
-		/*Адрес сектора, по отношению к которому осуществляется аутентификация ключа.*/
-		authenticateAPDU[7] =(byte)blockNumber;
-		
-		/*Определение типа ключа. Приведение к верхнему регистру.*/
-		keyType = keyType.toUpperCase();
-		switch(keyType)
-		{
-			case "A": authenticateAPDU[8] =(byte)0x60; break;
-			case "B": authenticateAPDU[8] =(byte)0x61; break;
-		}
-		/*Отправка команды и получение ответа.*/
-		answer = reader.GetChannel().transmit(new CommandAPDU(authenticateAPDU));
-		/*Если ответ отрицательный.*/
-		if(answer.getSW() != 0x9000)
-		{
-			throw new CardException("Ключ не подошел.");
-		}
-	}
-	
-	/**
 	*	Прочесть данные заданного блока.
 	*	C-DATA, case 2:
 	*	CLA		0xFF;
@@ -74,7 +37,7 @@ public class CardProcessing
 		/*16 байт очередного считанного блока.*/
 		String data						= "";
 		/*C-DATA. Получить 16 байт.*/
-		byte[] readDataAPDU			= Utilities.ToByteArray("FFB0000010");
+		byte[] readDataAPDU				= Utilities.ToByteArray("FFB0000010");
 		
 		int sector = 0;
 		for(int nextKey = 0; nextKey < 16; nextKey++)
@@ -82,7 +45,7 @@ public class CardProcessing
 			/*Загрузка ключа.*/
 			reader.LoadKey(keys.Get(nextKey));
 			/*Аутентификация ключа в очередном секторе.*/
-			AuthenticateKey(sector, keyType, reader);
+			reader.AuthenticateKey(sector, keyType);
 			/*Поблочное чтение сектора.*/
 			for(int j = sector; j < (sector + 4); j++)
 			{
@@ -143,7 +106,7 @@ public class CardProcessing
 					/*Загрузка ключа. Генерация исключения начнет итерацию со следующего сектора.*/
 					reader.LoadKey(availableKeysArrayList.get(i));
 					/*Аутентификация. Генерация исключения начнет итерацию со следующего сектора.*/
-					AuthenticateKey(block, keyType, reader);
+					reader.AuthenticateKey(block, keyType);
 					/*Если аутентификация прошла успешно, то записать номер сектора и подобранный ключ.*/
 					Utilities.SaveToFile(identifiedKey, Integer.toString((block - sector)), availableKeysArrayList.get(i));
 					

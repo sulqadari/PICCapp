@@ -102,4 +102,41 @@ public class ProximityCoupligDevice
 		}
 		return true;
 	}
+	
+	/**
+	*	Аутентификация загруженного ключа для конкретного сектора.
+	*	C-DATA, case 3:
+	*	CLA		0xFF;
+	*	INS		0x86;		- кодировка команды
+	*	P1		0x00;
+	*	P2		0x00;
+	*	P3		0x05;		- количество подаваемых байт
+	*	CDATA:	n			- номер блока, по отношению к которому осуществляется аутентификация.
+	*	CDATA:	0x60/0x61	- ключи А/В.
+	*	CDATA:	0x20		- ключ из временной памяти.
+	*
+	*	@param	blockNumber	Блок данных, по отношению к которому надо аутентифицировать ключ.
+	*	@param	keyType			Тип ключа (А/В)
+	*/
+	public void AuthenticateKey(int blockNumber, String keyType) throws CardException
+	{
+		byte[] authenticateAPDU = Utilities.ToByteArray("FF860000050100006020");
+		/*Адрес сектора, по отношению к которому осуществляется аутентификация ключа.*/
+		authenticateAPDU[7] =(byte)blockNumber;
+		
+		/*Определение типа ключа. Приведение к верхнему регистру.*/
+		keyType = keyType.toUpperCase();
+		switch(keyType)
+		{
+			case "A": authenticateAPDU[8] =(byte)0x60; break;
+			case "B": authenticateAPDU[8] =(byte)0x61; break;
+		}
+		/*Отправка команды и получение ответа.*/
+		answer = GetChannel().transmit(new CommandAPDU(authenticateAPDU));
+		/*Если ответ отрицательный.*/
+		if(answer.getSW() != 0x9000)
+		{
+			throw new CardException("Ключ не подошел.");
+		}
+	}
 }

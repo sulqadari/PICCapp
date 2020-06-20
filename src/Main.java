@@ -81,7 +81,7 @@ public class Main
 					keyType				= consoleInput.readLine("Тип Ключа [А или В]: ");
 					/*UID + время + дата как часть имени файла.*/
 					fileName			= fileName.concat(cardProcessing.GetUid(reader)).
-												   concat(new SimpleDateFormat("_HH-mm_dd.MM.yyyy").format(new Date()).toString()).
+												   concat(new SimpleDateFormat("_yyyy.MM.dd_HH-mm").format(new Date()).toString()).
 												   concat(".txt");
 					System.out.println("Идет чтение...");
 					/*Загрузить сериализованные ключи.*/

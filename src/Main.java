@@ -1,9 +1,13 @@
 import java.io.Console;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+
 import javax.smartcardio.CardException;
+import javax.smartcardio.ResponseAPDU;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.text.SimpleDateFormat;
 
 public class Main
 {
@@ -15,6 +19,8 @@ public class Main
 		CardProcessing cardProcessing	= new CardProcessing();
 		/*Инструмент ввода данных с клавиатуры.*/
 		Console consoleInput			= System.console();
+		/*Получение SW карты.*/
+		ResponseAPDU answer				= null;
 		/*Сериализованные данные.*/
 		SerializedData serializedData	= null;
 		/*Дата/время создания файла как часть его имени.*/
@@ -42,12 +48,14 @@ public class Main
 				{
 					ShowMenu();
 				}break;
+				
 				/*Подключить терминал.*/
 				case "2":
 				{
 					reader.ConnectTerminal(0);
 					System.out.format("Подключен терминал %s%n", reader.GetTerminal().getName());
 				}break;
+				
 				/*Подобрать ключи.*/
 				case "3":
 				{
@@ -69,35 +77,78 @@ public class Main
 					System.out.println("Извлеките карту...");
 					reader.DisconnectCard();
 				}break;
+				
 				/*Считать данные с карты.*/
 				case "4":
 				{
 					System.out.println("Считать с карты.\n");
-										
-					/*Установить канал связи с картой.*/
 					System.out.println("Приложите карту...");
+					/*Установить канал связи с картой.*/
 					reader.ConnectCard();
 					/*Тип ключа.*/
-					keyType				= consoleInput.readLine("Тип Ключа [А или В]: ");
+					keyType			= consoleInput.readLine("Тип Ключа [А или В]: ");
 					/*UID + время + дата как часть имени файла.*/
-					fileName			= fileName.concat(cardProcessing.GetUid(reader)).
-												   concat(new SimpleDateFormat("_yyyy.MM.dd_HH-mm").format(new Date()).toString()).
-												   concat(".txt");
+					fileName		= fileName.concat(cardProcessing.GetUid(reader)).
+										concat(new SimpleDateFormat("_yyyy.MM.dd_HH-mm").format(new Date()).toString()).
+										concat(".txt");
 					System.out.println("Идет чтение...");
+					
 					/*Загрузить сериализованные ключи.*/
-					serializedData		= new DataProcessing().LoadKeys(keyType);
-					/*Вывести на экран и записать в txt-файл.*/
-					cardProcessing.ReadData(serializedData, fileName, reader, keyType);
+					serializedData					= new DataProcessing().LoadKeys(keyType);
+					/*Массив временного хранения считанных данных.*/
+					ArrayList<String> retrievedData	= new ArrayList<String>();
+					/*16 байт очередного считанного блока.*/
+					String data						= "";
+					/*Номер очередного сектора.*/
+					int sector						= 0;
+					/*Динамическая инициализацпия во вложенном цикле (зависима от сектора).*/
+					int blockNumber;
+					for(int nextKey = 0; nextKey < 16; nextKey++)
+					{
+						/*Загрузка ключа.*/
+						reader.LoadKey(serializedData.Get(nextKey));
+						/*Аутентификация ключа в очередном секторе.*/
+						reader.AuthenticateKey(sector, keyType);
+						/*Поблочное чтение сектора.*/
+						for(blockNumber = sector; blockNumber < (sector + 4); blockNumber++)
+						{
+							try
+							{
+								answer = cardProcessing.ReadData(blockNumber, reader);
+								if(answer.getSW() != 0x9000)
+								{
+									throw new CardException("Не удалось прочитать блок.");
+								}
+								else data = Utilities.Hexify(answer.getData());
+								
+								/*Вывести на экран.*/
+								System.out.format("%d	%S%n", blockNumber, data);
+								retrievedData.add(data);
+							}
+							catch(CardException e)
+							{
+								System.out.println("ОШИБКА: " +e.getMessage());
+							}
+						}
+						/*0; 4; 8; 12; 16; 20; 24; 28; 32; 36; 40; 44; 48; 52; 56; 60 - номера первых блоков каждого сектора.*/
+						sector += 4;
+					}
+					/*Записать в файл.*/
+					Utilities.SaveToFile(fileName, retrievedData);
+					
+					/*Очистить поле "имя файла", иначе при следующей записи произойдет конкатенация новых данных имени к старым.*/
 					fileName			= "";
 					/*Разъединить канал связи с картой.*/
 					System.out.println("Уберите карту.");
 					reader.DisconnectCard();
 				}break;
+				
 				/*Обновить данные на карте.*/
 				case "5":
 				{
 					System.out.println("Сохраняю новые данные...\n");
 				}break;
+				
 				/*Сохранить ключи в программе.*/
 				case "6":
 				{
@@ -117,6 +168,7 @@ public class Main
 					System.out.println("Извлеките карту...");
 					reader.DisconnectCard();
 				}break;
+				
 				/*Завершить работу.*/
 				case "q":
 				{

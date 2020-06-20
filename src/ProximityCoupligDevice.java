@@ -132,7 +132,7 @@ public class ProximityCoupligDevice
 			case "B": authenticateAPDU[8] =(byte)0x61; break;
 		}
 		/*Отправка команды и получение ответа.*/
-		answer = GetChannel().transmit(new CommandAPDU(authenticateAPDU));
+		answer = channel.transmit(new CommandAPDU(authenticateAPDU));
 		/*Если ответ отрицательный.*/
 		if(answer.getSW() != 0x9000)
 		{

@@ -93,7 +93,6 @@ public class CardProcessing
 	*	@param reader
 	*	@param keyType
 	*
-	*	@throws CardException	Не удалось прочитать данные.
 	*	@throws StringIndexOutOfBoundsException	Размер ключа не соответствует ожидаемому. Выбрасывается классом Utilities(???). Разобраться!
 	*	@throws CardException	Не удалось прочитать данные.
 	*/

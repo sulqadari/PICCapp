@@ -11,8 +11,7 @@ import java.io.FileNotFoundException;
 
 public class DataProcessing
 {	
-	int index;
-	SerializedData serializedData;
+	private SerializedData serializedData;
 	
 	DataProcessing()
 	{

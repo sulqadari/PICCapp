@@ -111,14 +111,14 @@ public class Utilities
 	public static ArrayList<String> LoadFile(String inputFile) throws FileNotFoundException
 	{
 		/*Сохранить ключи в ArrayList.*/
-		ArrayList<String> keys	= new ArrayList<String>();
+		ArrayList<String> data	= new ArrayList<String>();
 		/*Построчное сканирование файла с ключами.*/
 		Scanner scanner			= new Scanner(new File(inputFile));
 		while(scanner.hasNextLine())
 		{
-			keys.add(scanner.nextLine());
+			data.add(scanner.nextLine());
 		}
 		scanner.close();
-		return keys;
+		return data;
 	}
 }

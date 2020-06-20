@@ -20,61 +20,72 @@ public class CardProcessing
 	*	CLA		0xFF;
 	*	INS		0xB0;
 	*	P1		0x00;
-	*	P2		blockNumber;
-	*	P3		0x10		- ожидается 16 байт ответа.
+	*	P2		blockNumber		Номер считываемого блока.
+	*	P3		0x10			ожидается 16 байт ответа.
 	*	
-	*	@param	key			Экземпляр класса SerializedData с ключами.
-	*	@param	outputFile	Целевой файл сохранения считанных данных.
-	*	@param	reader		Текущий подключенный ридер.
-	*	@param	keyType		Тип ключа чтения данных.
+	*	@param	blockNumber		Номер считываемого блока.
+	*	@param	reader			Текущий подключенный ридер.
 	*
 	*	@throws CardException	Не удалось прочитать данные.
 	*/
-	public void ReadData(SerializedData keys, String outputFile, ProximityCoupligDevice reader, String keyType) throws CardException, IOException
+	public ResponseAPDU ReadData(int blockNumber, ProximityCoupligDevice reader) throws CardException
 	{	
-		/*Массив временного хранения считанных данных.*/
-		ArrayList<String> retrievedData	= new ArrayList<String>();
-		/*16 байт очередного считанного блока.*/
-		String data						= "";
 		/*C-DATA. Получить 16 байт.*/
-		byte[] readDataAPDU				= Utilities.ToByteArray("FFB0000010");
-		
-		int sector = 0;
-		for(int nextKey = 0; nextKey < 16; nextKey++)
-		{
-			/*Загрузка ключа.*/
-			reader.LoadKey(keys.Get(nextKey));
-			/*Аутентификация ключа в очередном секторе.*/
-			reader.AuthenticateKey(sector, keyType);
-			/*Поблочное чтение сектора.*/
-			for(int j = sector; j < (sector + 4); j++)
-			{
-				readDataAPDU[3] = (byte)j;
-				try
-				{
-					answer = reader.GetChannel().transmit(new CommandAPDU(readDataAPDU));
-					if(answer.getSW() != 0x9000)
-					{
-						throw new CardException("Не удалось прочитать блок.");
-					}
-					else data = Utilities.Hexify(answer.getData());
-					
-					/*Вывести на экран.*/
-					System.out.format("%d	%S%n", j, data);
-					retrievedData.add(data);
-				}
-				catch(CardException e)
-				{
-					System.out.println("ОШИБКА: " +e.getMessage());
-				}
-			}
-			/*0; 4; 8; 12; 16; 20; 24; 28; 32; 36; 40; 44; 48; 52; 56; 60 - номера первых блоков каждого сектора.*/
-			sector += 4;
-		}
-		/*Записать в файл.*/
-		Utilities.SaveToFile(outputFile, retrievedData);
+		byte[] readDataAPDU		= Utilities.ToByteArray("FFB0000010");
+		/*Номер считываемого блока.*/
+		readDataAPDU[3]			= (byte)blockNumber;
+		/*Ответ карты. Содержит SW и (если ключ подошел) 16 байт данных блока.*/
+		answer					= reader.GetChannel().transmit(new CommandAPDU(readDataAPDU));
+		/*Вернуть полученные данные.*/
+		return answer;
 	}
 	
+	/**
+	*	Обновить данные заданного блока.
+	*	C-DATA, case 2:
+	*	CLA		0xFF;
+	*	INS		0xD6;
+	*	P1		0x00;
+	*	P2		blockNumber;	Номер обновляемого блока.
+	*	P3		0x10			Количество байт к обновлению (16).
+	*	data	10				Непосредственно байты.
+	*	
+	*	@param	blockNumber		Номер обновляемого блока.
+	*	@param	data			Новые данные.
+	*	@param	reader			Текущий подключенный ридер.
+	*
+	*	@throws CardException	Ошибка передачи данных/получения SW.
+	*/
+	public ResponseAPDU WriteData(int blockNumber, String data, ProximityCoupligDevice reader) throws CardException
+	{	
+		/*C-DATA. Передать 16 байт новых данных.*/
+		byte[] updateDataAPDU	= Utilities.ToByteArray("FFD6000010" + data);
+		/*Номер считываемого блока.*/
+		updateDataAPDU[3]		= (byte)blockNumber;
+		/*Ответ карты. Содержит SW.*/
+		answer					= reader.GetChannel().transmit(new CommandAPDU(updateDataAPDU));
+		/*Вернуть полученные данные.*/
+		return answer;
+	}
+	
+	/*Получить уникальный идентификационный номер карты.*/
+	public String GetUid(ProximityCoupligDevice reader)  throws CardException
+	{
+		byte[] getUidCommand	= Utilities.ToByteArray("FFCA000000");
+		String uid				= "";
+		answer					= reader.GetChannel().transmit(new CommandAPDU(getUidCommand));
+		
+		if(answer.getSW() != 0x9000)
+		{
+			uid = "Не удалось получить UID.";
+		}
+		else
+		{
+			uid = Utilities.Hexify(answer.getData());
+		}
+		return uid;
+	}
+
 	/**
 	*	Определение ключей доступа для каждого сектора. Ключи подаются в .txt-файле.<br>
 	*	@param inputFile	
@@ -82,7 +93,6 @@ public class CardProcessing
 	*	@param reader
 	*	@param keyType
 	*
-	*	@throws CardException	Не удалось прочитать данные.
 	*	@throws StringIndexOutOfBoundsException	Размер ключа не соответствует ожидаемому. Выбрасывается классом Utilities(???). Разобраться!
 	*	@throws CardException	Не удалось прочитать данные.
 	*/
@@ -119,24 +129,4 @@ public class CardProcessing
 			}
 		}
 	}
-	
-	/*Получить уникальный идентификационный номер карты.*/
-	public String GetUid(ProximityCoupligDevice reader)  throws CardException
-	{
-		byte[] getUidCommand = Utilities.ToByteArray("FFCA000000");
-		String uid = "";
-		
-		answer = reader.GetChannel().transmit(new CommandAPDU(getUidCommand));
-		if(answer.getSW() != 0x9000)
-		{
-			throw new CardException("Не удалось получить UID.");
-		}
-		else
-		{
-			uid = Utilities.Hexify(answer.getData());
-		}
-		return uid;
-	}
-	
-	
 }

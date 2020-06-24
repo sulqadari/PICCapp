@@ -6,6 +6,7 @@ import javax.smartcardio.CardChannel;
 import javax.smartcardio.CommandAPDU;
 import javax.smartcardio.Card;
 import java.util.List;
+import java.util.ArrayList;
 
 public class ProximityCoupligDevice
 {
@@ -21,17 +22,25 @@ public class ProximityCoupligDevice
 	private ResponseAPDU		answer;
 	
 	/**
-	*	Подключение к одному из доступных терминалов.
-	*	@param	terminalNumber	- Порядковый номер терминала.
+	*	Получить список доступных терминалов.
+	*	@param	terminalsList	- Порядковый номер терминала.
 	*/
-	public void ConnectTerminal(int terminalNumber) throws CardException
+	public List<CardTerminal> GetTerminals() throws CardException
 	{
 		/*Получить экземпляр TerminalFactory.*/
 		TerminalFactory terminalFactory	= TerminalFactory.getDefault();
 		/*Получить список доступных терминалов.*/
 		terminalsList					= terminalFactory.terminals().list();
-		/*Подключение терминалу № terminalNumber.*/
-		terminal						= terminalsList.get(terminalNumber);
+		return terminalsList;
+	}
+	
+	/**
+	*	Подключение к одному из доступных терминалов.
+	*	@param	terminalNumber	- Порядковый номер терминала.
+	*/
+	public void ConnectTerminal(int terminalNumber) throws CardException
+	{
+		terminal = terminalsList.get(terminalNumber);
 	}
 	
 	/**

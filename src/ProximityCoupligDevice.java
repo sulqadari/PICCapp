@@ -2,6 +2,7 @@ import javax.smartcardio.TerminalFactory;
 import javax.smartcardio.CardException;
 import javax.smartcardio.ResponseAPDU;
 import javax.smartcardio.CardTerminal;
+import javax.smartcardio.CardTerminals;
 import javax.smartcardio.CardChannel;
 import javax.smartcardio.CommandAPDU;
 import javax.smartcardio.Card;
@@ -10,7 +11,11 @@ import java.util.ArrayList;
 
 public class ProximityCoupligDevice
 {
-	/*Непосредственно список доступных терминалов.*/
+	/*Экземпляр для получения CardTerminals.*/
+	private TerminalFactory factory;
+	/*Набор доступных терминалов, полученных объектом factory.*/
+	private CardTerminals cardTerminals;
+	/*Непосредственно список доступных терминалов, полученных методом cardTerminals.list()*/
 	private List<CardTerminal>	terminalsList;
 	/*Экземпляр подключенного терминала. Через него обеспечивается связь с картами.*/
 	private CardTerminal		terminal;
@@ -23,14 +28,23 @@ public class ProximityCoupligDevice
 	
 	/**
 	*	Получить список доступных терминалов.
-	*	@param	terminalsList	- Порядковый номер терминала.
 	*/
-	public List<CardTerminal> GetTerminals() throws CardException
+	public List<CardTerminal> GetTerminalsList() throws CardException
 	{
 		/*Получить экземпляр TerminalFactory.*/
-		TerminalFactory terminalFactory	= TerminalFactory.getDefault();
+		factory	= TerminalFactory.getDefault();
 		/*Получить список доступных терминалов.*/
-		terminalsList					= terminalFactory.terminals().list();
+		if (factory.terminals() != null)
+		{
+			cardTerminals = factory.terminals();
+		}
+		else throw new CardException("ОШИБКА: метод factory.terminals().");
+		
+		if(cardTerminals.list() != null)
+		{
+			terminalsList = cardTerminals.list();
+		}
+		else throw new CardException("ОШИБКА: метод cardTerminals.list().");
 		return terminalsList;
 	}
 	

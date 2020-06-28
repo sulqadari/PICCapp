@@ -11,11 +11,7 @@ import java.util.ArrayList;
 
 public class ProximityCoupligDevice
 {
-	/*Экземпляр для получения CardTerminals.*/
-	private TerminalFactory factory;
-	/*Набор доступных терминалов, полученных объектом factory.*/
-	private CardTerminals cardTerminals;
-	/*Непосредственно список доступных терминалов, полученных методом cardTerminals.list()*/
+	/*Список доступных терминалов.*/
 	private List<CardTerminal>	terminalsList;
 	/*Экземпляр подключенного терминала. Через него обеспечивается связь с картами.*/
 	private CardTerminal		terminal;
@@ -32,17 +28,13 @@ public class ProximityCoupligDevice
 	public List<CardTerminal> GetTerminalsList() throws CardException
 	{
 		/*Получить экземпляр TerminalFactory.*/
-		factory	= TerminalFactory.getDefault();
+		List<CardTerminal> terminalsList;
+		TerminalFactory factory	= TerminalFactory.getDefault();
 		/*Получить список доступных терминалов.*/
 		if (factory.terminals() != null)
 		{
-			cardTerminals = factory.terminals();
-		}
-		else throw new CardException("ОШИБКА: метод factory.terminals().");
-		
-		if(cardTerminals.list() != null)
-		{
-			terminalsList = cardTerminals.list();
+			//cardTerminals = factory.terminals();
+			terminalsList = factory.terminals().list();
 		}
 		else throw new CardException("ОШИБКА: метод cardTerminals.list().");
 		return terminalsList;
@@ -56,24 +48,7 @@ public class ProximityCoupligDevice
 	{
 		terminal = terminalsList.get(terminalNumber);
 	}
-	
-	/**
-	*	Экземпляр выбранного ридера. На начальном этапе нужен для вывода имени подключенного терминала.
-	*	@returns terminal	Экземпляр подключенного терминала.
-	*/
-	public CardTerminal GetTerminal()
-	{
-		return terminal;
-	}
-	
-	/**
-	*	Список доступных ридеров. Можно использовать для вывода на экран списка терминалов, а также выбрать один из них.
-	*	@returns List<CardTerminal>	список доступных ридеров.
-	*/
-	public List<CardTerminal> GetAvailableTerminalsList()
-	{
-		return terminalsList;
-	}
+
 	
 	/**Подключить карту.*/
 	public void ConnectCard() throws CardException

@@ -9,15 +9,34 @@ import javax.smartcardio.CardTerminal;
 public class TroikaAppModel
 {
 	/*Экземпляр класса по работе с ридером.*/
-	ProximityCoupligDevice		reader = new ProximityCoupligDevice();
+	public ProximityCoupligDevice 		reader = new ProximityCoupligDevice();
 	/*Список доступных терминалов.*/
-	private ObservableList<CardTerminal>		readers;
-	/*Переключение между доступными терминалами. Инициализируется моделью выбора в главном классе.*/
-	private SingleSelectionModel	terminalSelectionModel;
+	public ObservableList<CardTerminal>	readers;
+	/*Переключение между доступными терминалами. Инициализируется в основном классе.*/
+	public SingleSelectionModel			terminalSelectionModel;
 	
 	/*Вывести в ChoiceBox список доступных терминалов.*/
-	public void ShowTerminals() throws CardException, NullPointerException
+	public void ShowTerminals() throws CardException
 	{
 		readers = FXCollections.observableArrayList(reader.GetTerminalsList());
+	}
+	
+	/*Подключить терминал.*/
+	public void ConnectTerminal()
+	{
+		
+		terminalSelectionModel.selectedIndexProperty().addListener((Observable observable) ->
+		{
+			int selectedIndex = terminalSelectionModel.selectedIndexProperty().get();
+			try
+			{
+				reader.ConnectTerminal(selectedIndex);
+			}
+			catch(CardException exc)
+			{
+				System.out.println(exc.getMessage());
+			}
+			
+		});
 	}
 }

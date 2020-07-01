@@ -107,7 +107,14 @@ public class Main
 						/*Загрузка ключа.*/
 						reader.LoadKey(serializedData.Get(nextKey));
 						/*Аутентификация ключа в очередном секторе.*/
-						reader.AuthenticateKey(sector, keyType);
+						try
+						{
+							reader.AuthenticateKey(sector, keyType);
+						}
+						catch(CardException exc)
+						{
+							System.out.println(exc.getMessage() + " сектор: " + nextKey);
+						}
 						/*Поблочное чтение сектора.*/
 						for(blockNumber = sector; blockNumber < (sector + 4); blockNumber++)
 						{

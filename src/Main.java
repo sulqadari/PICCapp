@@ -7,7 +7,9 @@ import javax.smartcardio.ResponseAPDU;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.TimeZone;
 import java.text.SimpleDateFormat;
+import java.text.DateFormat;
 
 public class Main
 {
@@ -225,6 +227,18 @@ public class Main
 					reader.DisconnectCard();
 				}break;
 				
+				/*Дата прохода.*/
+				case "7":
+				{
+					System.out.println("Дата прохода:");
+					long tameStamp = Long.valueOf(consoleInput.readLine("Значение типа long: "));
+					Date theEnd = new Date(tameStamp);
+					DateFormat dateFormat = SimpleDateFormat.getDateTimeInstance(SimpleDateFormat.LONG, SimpleDateFormat.LONG);
+					dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
+					String text = dateFormat.format(theEnd);
+					System.out.println(text);
+				}break;
+				
 				/*Завершить работу.*/
 				case "q":
 				{
@@ -242,11 +256,11 @@ public class Main
 	
 	public static void ShowMenu()
 	{
-		System.out.format("%S%n%S%n%S%n%S%n%S%n%S%n%s%n",
+		System.out.format("%S%n%S%n%S%n%S%n%S%n%S%n%S%n%s%n",
 		"[1] - Меню",						"[2] - Подключить терминал",
 		"[3] - Подобрать ключи к карте.",	"[4] - Считать данные с карты.",
 		"[5] - Обновить данные на карте.",	"[6] - Вшить ключи в приложение.",
-		"[q] - Выход."
+		"[7] - Временной штамп.",			"[q] - Выход."
 		);
 	}
 }
